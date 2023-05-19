@@ -2,21 +2,22 @@
 from matplotlib import style
 style.use('fivethirtyeight')
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import datetime as dt
+import numpy as np
 from dateutil.relativedelta import relativedelta
 from flask import Flask, jsonify
 import sqlalchemy
-from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, func
-
+from  sqlalchemy.ext.automap import automap_base
+from  sqlalchemy.orm import Session
+from  sqlalchemy import create_engine, func
+import os as os
+print(os.getcwd())
 #################################################
 # Database Setup
 #################################################
 # reflect an existing database into a new model
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///SurfsUp/Resources/hawaii.sqlite")
 Base = automap_base()
 # reflect the tables
 Base.prepare(engine, reflect=True)
@@ -63,13 +64,18 @@ def welcome():
     return (
         f"Welcome to Hawaii Weather API!<br/>"
         f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation"
-        f"/api/v1.0/stations"
-        f"/api/v1.0/stations"
-        f"/api/v1.0/tobs"
-        f"/api/v1.0/<start>"
-        f"/api/v1.0/<start>/<end>"
+        f"Precipitation data for last year:<br/>"
+        f"/api/v1.0/precipitation<br/>"
+        f"List of available stations:<br/>"
+        f"/api/v1.0/stations<br/>"
+        f"Temperature data for last year:<br/>"
+        f"/api/v1.0/tobs<br/>"
+        f"For summary data from start date to latest observation:<br/>"
+        f"/api/v1.0/YYYY-MM-DD<br/>"
+        f"For summary data between two dates (start, end):<br/>"
+        f"/api/v1.0/YYYY-MM-DD/YYYY-MM-DD"
         )
+
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     # Perform a query to retrieve the date and precipitation scores
@@ -109,7 +115,8 @@ def last12mo_temp():
 
 @app.route("/api/v1.0/<start>")
 def start_lookup(start):
-    start=dt.datetime.strftime(start, '%Y-%m-%d')
+    
+    start=dt.datetime.strptime(start, '%Y-%m-%d')
     temps_query=session.query(measurement.tobs).filter(measurement.station==top_station).filter(measurement.date>=start).all()
     temps=[]
     for t in temps_query:
@@ -118,17 +125,24 @@ def start_lookup(start):
     
     return jsonify(min_max_ave_temp)
 
-@app.route("/api/v1.0/<start>/<end>")
-def start_lookup(start,end):
-    start=dt.datetime.strftime(start, '%Y-%m-%d')
-    end=dt.datetime.strftime(end, '%Y-%m-%d')
-    temps_query=session.query(measurement.tobs).filter(measurement.station==top_station).filter(measurement.date>=start).filter(measurement.date<=end).all()
+@app.route("/api/v1.0/<start2>/<end>")
+def start_end_lookup(start2,end):
+    start=dt.datetime.strptime(start2, '%Y-%m-%d')
+    end=dt.datetime.strptime(end, '%Y-%m-%d')
+    temps_query=session.query(measurement.tobs).filter(measurement.station==top_station).filter(measurement.date>=start2).filter(measurement.date<=end).all()
     temps=[]
     for t in temps_query:
         temps.append(t[0])
-    min_max_ave_temp={'start_date':start, 'end date':end, 'min temp':min(temps), 'max temp':max(temps), 'average temp':sum(temps)/len(temps)}
+    min_max_ave_temp={'start_date':start2, 'end date':end, 'min temp':min(temps), 'max temp':max(temps), 'average temp':sum(temps)/len(temps)}
     
     return jsonify(min_max_ave_temp)
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
